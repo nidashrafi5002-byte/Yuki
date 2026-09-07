@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.hover-scale:hover {
+  transform: scale(1.03);
+}
+
+.hover-scale:active {
+  transform: scale(0.97);
+}
+
+.custom-map-pin {
+  background: transparent;
+  border: none;
+}
+
+/* Leaflet dark theme styling */
+.leaflet-container {
+  font-family: inherit;
+  background-color: #020617 !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+.leaflet-bar a {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #1e293b !important;
+  color: #fff !important;
+}
+
+.leaflet-container .leaflet-control-attribution {
+  background: rgba(2, 6, 23, 0.75) !important;
+  color: #64748b !important;
+}
+
+.leaflet-container .leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+/* Custom scrollbar for dark aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Bootstrap dark theme harmony overrides */
+.card {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #1e293b !important;
+}
+
+.form-control, .form-select {
+  background-color: #020617 !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: #020617 !important;
+  color: #f1f5f9 !important;
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 0 0.25rem rgba(225, 29, 72, 0.25) !important;
+}
+
+.form-control::placeholder {
+  color: #64748b !important;
+}
+
+.modal-content {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #f1f5f9;
+  --bs-table-border-color: #1e293b;
+}
+
+.bg-light {
+  background-color: #020617 !important;
+}
+
+.bg-white {
+  background-color: #0f172a !important;
+}
+
+.text-dark {
+  color: #f1f5f9 !important;
+}
+
+.text-muted {
+  color: #94a3b8 !important;
+}

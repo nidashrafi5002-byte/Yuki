@@ -1,0 +1,306 @@
+{
+  "users": [
+    {
+      "id": "usr_nirbhaya_demo_01",
+      "name": "Nida Ashrafi",
+      "email": "nidashrafi5002@gmail.com",
+      "phone": "+919876543210",
+      "passwordHash": "bac661581d26a002a69cbc5f9696c46f0da9172330547a3920e471ed45ffa50269f883762ec23600ff03a9d5c4d2fcbf9a3c3ed06710ceb918685a0263a0c84a",
+      "salt": "7e332a1c6052c3b66421b65bce25611b",
+      "safetyPinHash": "cf6f500b7ac2374fbe0e494f3bd13240dfe8dc92d906ef5b9f4752bf6cc541f1a52dfa6e1a63949ae09c3dac77a5d7e10c610c8df4896fa825f025d74ab61128",
+      "safetyPinSalt": "09287568b0fbf4032a9b5c28458dfea1",
+      "duressPinHash": "c0ba806578d09f36278fb0ae66a672cf22d29be6b69e4be8d6d6223e799f789d5fca68869dcd815755f46505571411aa800e8d2cf91e49aeb249695a16b42bfc",
+      "duressPinSalt": "bfd51e47cd777a01f74e10b49b03dd08",
+      "medicalNotes": "Blood Group: B+ve. Asthma inhaler in bag.",
+      "createdAt": "2026-09-07T12:59:05.447Z",
+      "isVerified": true,
+      "failedLoginAttempts": 0,
+      "resetCode": null,
+      "resetToken": null,
+      "resetExpires": null,
+      "lockedUntil": null
+    },
+    {
+      "id": "usr_e2ae336c-3de7-4f52-b9ef-ffba7fdfd232",
+      "name": "Pooja Verma",
+      "email": "pooja.verma@example.com",
+      "phone": "+919811122233",
+      "passwordHash": "af976612ff09cbbdd5b87ce2ff5766e8ed805f65ec2b64047ce39de792a9d7e12e36a3d17ba247528fa6498c82db6e789f5a26e95c76be3e1c6f7e08bb602661",
+      "salt": "a194cd5108fea944cc6e59aa5c455f70",
+      "safetyPinHash": "80901c73d0f75856ec5482fa6c467e6a9616d0fc34eab8add4cbc3ff78faaad3a30a412c04bfece644e8a64b27ab5518270e7f1ccf524277f3c84f77c123fbab",
+      "safetyPinSalt": "fa4b98482ded8cd2e434ae3cda3e1c78",
+      "duressPinHash": "aa4ca45a59681fa80a73e4995c6d6a434a53342a84205dcb7d1ce6cc6c1408a3287ba3a7d93959cb0c9f2b5514fd2e80b71c9191fb906ed1e9e9a0ed450a6b12",
+      "duressPinSalt": "dd2ef53c4349a470447de5e94ef6ad1a",
+      "isVerified": true,
+      "failedLoginAttempts": 0,
+      "lockedUntil": null,
+      "createdAt": "2026-09-07T13:18:58.773Z"
+    }
+  ],
+  "trustedContacts": [
+    {
+      "id": "tc_demo_01",
+      "userId": "usr_nirbhaya_demo_01",
+      "name": "Amina Ashrafi (Mother)",
+      "relationship": "Mother",
+      "phone": "+919876500001",
+      "email": "amina.family@example.com",
+      "isVerified": true,
+      "verificationCode": "7281",
+      "canReceiveSMS": true,
+      "canReceiveWhatsApp": true,
+      "canReceiveEmail": true,
+      "isPrimary": false,
+      "createdAt": "2026-09-07T12:59:05.448Z"
+    },
+    {
+      "id": "tc_demo_02",
+      "userId": "usr_nirbhaya_demo_01",
+      "name": "Pooja Verma (Best Friend)",
+      "relationship": "Close Friend",
+      "phone": "+919876500002",
+      "email": "pooja.verma@example.com",
+      "isVerified": true,
+      "verificationCode": "4912",
+      "canReceiveSMS": true,
+      "canReceiveWhatsApp": true,
+      "canReceiveEmail": false,
+      "isPrimary": false,
+      "createdAt": "2026-09-07T12:59:05.448Z"
+    },
+    {
+      "id": "tc_demo_03",
+      "userId": "usr_nirbhaya_demo_01",
+      "name": "Inspector Meera Sen (Local Women Cell)",
+      "relationship": "Local Women Safety Liaison",
+      "phone": "+919876500003",
+      "email": "womencell.meera@police.gov.in",
+      "isVerified": true,
+      "verificationCode": "8834",
+      "canReceiveSMS": true,
+      "canReceiveWhatsApp": false,
+      "canReceiveEmail": true,
+      "isPrimary": false,
+      "createdAt": "2026-09-07T12:59:05.448Z"
+    },
+    {
+      "name": "Amina Ashrafi (Mom)",
+      "relationship": "Mother",
+      "phone": "+91 98765 43210",
+      "email": "amina.mom@example.com",
+      "canReceiveSMS": true,
+      "canReceiveWhatsApp": true,
+      "canReceiveEmail": true,
+      "isPrimary": true,
+      "id": "tc_555a2067-6199-4f8a-94de-13b80eb40d2b",
+      "userId": "usr_nirbhaya_demo_01",
+      "isVerified": true,
+      "verificationCode": "3112",
+      "createdAt": "2026-09-07T13:38:00.782Z"
+    }
+  ],
+  "emergencySessions": [],
+  "breadcrumbs": [],
+  "walkWithMeTimers": [],
+  "incidentReports": [
+    {
+      "id": "inc_demo_01",
+      "userId": "usr_nirbhaya_demo_01",
+      "category": "STALKING",
+      "title": "Repeated stalking near Metro Station Exit 2",
+      "incidentDate": "2026-09-05",
+      "location": "Rajiv Chowk Metro Station, Gate 2",
+      "description": "Silver motorbike without visible plate followed me twice from the metro gate towards the bus stand around 8:45 PM.",
+      "witnesses": "Metro security guard on duty (Guard ID 402)",
+      "evidenceNotes": "Recorded 15-sec audio note and noted time stamps.",
+      "suspectDetails": "Wearing dark helmet and black jacket.",
+      "isEncrypted": true,
+      "status": "SAVED",
+      "createdAt": "2026-09-05T12:59:05.448Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "aud_init",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "SYSTEM_INITIALIZED",
+      "details": "Nirbhaya Shield security engine initialized with encrypted contact parameters",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T12:59:05.448Z"
+    },
+    {
+      "id": "aud_401dcb2e-8ad1-42cc-8cc5-45e51d5864b2",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Failed password attempt for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:18:44.371Z"
+    },
+    {
+      "id": "aud_bcd9bebd-d23e-4113-922a-ef937e80de8c",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_REQUESTED",
+      "details": "Reset code generated for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:18:49.842Z"
+    },
+    {
+      "id": "aud_0dc3b72e-9f32-49b9-8b11-eb80d3e33a94",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_COMPLETED",
+      "details": "Password successfully reset for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:18:54.415Z"
+    },
+    {
+      "id": "aud_58d19820-604a-42a9-af47-a3980b733b7a",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:18:56.581Z"
+    },
+    {
+      "id": "aud_b4db284a-6f69-4be5-9a7a-833344a6eeb4",
+      "userId": "usr_e2ae336c-3de7-4f52-b9ef-ffba7fdfd232",
+      "action": "USER_REGISTERED",
+      "details": "Account created for pooja.verma@example.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:18:58.773Z"
+    },
+    {
+      "id": "aud_67728218-0ac6-4505-8009-6572e2628199",
+      "userId": "usr_e2ae336c-3de7-4f52-b9ef-ffba7fdfd232",
+      "action": "USER_LOGIN",
+      "details": "Successful login for pooja.verma@example.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:19:02.718Z"
+    },
+    {
+      "id": "aud_0d9042bd-e28c-4b64-bbb8-373bf912f117",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Failed password attempt for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:19:44.485Z"
+    },
+    {
+      "id": "aud_85704157-3664-445c-a865-43c7087fea9b",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_REQUESTED",
+      "details": "Reset code generated for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:20:07.009Z"
+    },
+    {
+      "id": "aud_55d97dfc-0a34-40bd-8781-9c931e563d99",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_COMPLETED",
+      "details": "Password successfully reset for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:20:27.545Z"
+    },
+    {
+      "id": "aud_5832ff7f-a589-40fd-bb87-8700b465a5ce",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:20:32.879Z"
+    },
+    {
+      "id": "aud_e9adfc24-070b-4f79-8899-e10ad8289124",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:26:41.431Z"
+    },
+    {
+      "id": "aud_dce97d73-e74c-4c2b-84f5-53ae5eec4cb7",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Failed password attempt for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:34:23.877Z"
+    },
+    {
+      "id": "aud_6249b623-daa9-4a05-b10c-8e593ff94687",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:38:00.771Z"
+    },
+    {
+      "id": "aud_52fe2071-e78b-4b16-837e-8154eee97445",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "TRUSTED_CONTACT_ADDED",
+      "details": "Added trusted contact: Amina Ashrafi (Mother)",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:38:00.782Z"
+    },
+    {
+      "id": "aud_08c9b28a-5f11-447c-ba13-1a3941aed4c3",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "TRUSTED_CONTACT_UPDATED",
+      "details": "Updated trusted contact: Amina Ashrafi (Mom)",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:38:00.791Z"
+    },
+    {
+      "id": "aud_0087724f-86d0-4e5a-a9b8-03bcba4fa968",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:38:05.490Z"
+    },
+    {
+      "id": "aud_a949faff-7a33-467a-b67e-634f2bebd0f0",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-07T13:39:32.118Z"
+    }
+  ],
+  "sessionTokens": [
+    {
+      "token": "6519bdff43996cf9015bce4c05cb182707436f9bbbbbb795e46635007cd11dce",
+      "userId": "usr_e2ae336c-3de7-4f52-b9ef-ffba7fdfd232",
+      "createdAt": "2026-09-07T13:18:58.773Z",
+      "expiresAt": "2026-09-14T13:18:58.773Z"
+    },
+    {
+      "token": "e5d04b6337fd6fd9cbd5c276e0d0798fce9b7d8bff1bbb46712df203dde285c9",
+      "userId": "usr_e2ae336c-3de7-4f52-b9ef-ffba7fdfd232",
+      "createdAt": "2026-09-07T13:19:02.718Z",
+      "expiresAt": "2026-09-14T13:19:02.718Z"
+    },
+    {
+      "token": "e42644528ecb625756873e3b46908b69f84aa5e0a2c60532abd7c7c82dcd2524",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-07T13:26:41.430Z",
+      "expiresAt": "2026-09-14T13:26:41.430Z"
+    },
+    {
+      "token": "d0538d9558d5a0ca187d92a6f4d93a4f05867d1288ae84c900369614555e1248",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-07T13:38:00.769Z",
+      "expiresAt": "2026-09-14T13:38:00.769Z"
+    },
+    {
+      "token": "4dc73d974b8bad79ada2aaccbbf5e595bc67cfdd7502ce848d5c2f649ef1368e",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-07T13:38:05.489Z",
+      "expiresAt": "2026-09-14T13:38:05.489Z"
+    },
+    {
+      "token": "62c40f3e1780e2112562aebbaf532de0d9d6181f171a93d4f9ca6d555c14dcd7",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-07T13:39:32.116Z",
+      "expiresAt": "2026-09-14T13:39:32.116Z"
+    }
+  ]
+}
