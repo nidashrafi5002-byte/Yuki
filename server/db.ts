@@ -124,9 +124,30 @@ interface DatabaseSchema {
   sessionTokens: SessionTokenRecord[];
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+function resolveDataDir(): string {
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME || !!process.env.LAMBDA_TASK_ROOT;
+  if (isServerless) {
+    return path.join('/tmp', 'yuki_data');
+  }
+
+  const defaultDir = path.join(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(defaultDir)) {
+      fs.mkdirSync(defaultDir, { recursive: true });
+    }
+    const testFile = path.join(defaultDir, `.writable_test_${Date.now()}`);
+    fs.writeFileSync(testFile, '1');
+    fs.unlinkSync(testFile);
+    return defaultDir;
+  } catch {
+    return path.join('/tmp', 'yuki_data');
+  }
+}
+
+const DATA_DIR = resolveDataDir();
 const DB_FILE = path.join(DATA_DIR, 'yuki_store.json');
 const LEGACY_DB_FILE = path.join(DATA_DIR, 'nirbhaya_store.json');
+const BUNDLED_DB_FILE = path.join(process.cwd(), 'data', 'yuki_store.json');
 
 class YukiDatabase {
   private data: DatabaseSchema = {
@@ -152,6 +173,17 @@ class YukiDatabase {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         this.data = JSON.parse(raw);
+      } else if (DATA_DIR !== path.join(process.cwd(), 'data') && fs.existsSync(BUNDLED_DB_FILE)) {
+        // In serverless /tmp environment, seed from repository's bundled store
+        try {
+          const raw = fs.readFileSync(BUNDLED_DB_FILE, 'utf-8');
+          this.data = JSON.parse(raw);
+          this.persist();
+        } catch (copyErr) {
+          console.error('Failed to load bundled db file:', copyErr);
+          this.seedInitialData();
+          this.persist();
+        }
       } else if (fs.existsSync(LEGACY_DB_FILE)) {
         // Seamlessly preserve existing user accounts, contacts, and reports
         const raw = fs.readFileSync(LEGACY_DB_FILE, 'utf-8');

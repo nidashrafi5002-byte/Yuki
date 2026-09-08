@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiRequest, YukiApiError } from '../utils/api';
 import {
   Shield,
   Lock,
@@ -145,26 +146,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister }) => {
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const data = await apiRequest('/api/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail })
       });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrorMessage(data.error || 'Failed to request password reset code.');
-        setErrorCode(data.code || null);
-        return;
-      }
 
       setGeneratedCodeDisplay(data.resetCode);
       setResetCode(data.resetCode || '');
       setResetStep(2);
       setSuccessMessage(`Password reset code generated. Please set your new password below.`);
     } catch (err: any) {
-      setErrorMessage('Network or server error. Could not connect to Yuki authentication service.');
-      setErrorCode('SERVICE_UNAVAILABLE');
+      setErrorMessage(err.message || 'Could not connect to Yuki authentication service.');
+      setErrorCode(err.code || 'SERVICE_UNAVAILABLE');
     } finally {
       setIsLoading(false);
     }
@@ -189,31 +182,23 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister }) => {
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      await apiRequest('/api/auth/reset-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
           code: resetCode.trim(),
           newPassword
         })
       });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrorMessage(data.error || 'Failed to reset password.');
-        setErrorCode(data.code || null);
-        return;
-      }
 
       setSuccessMessage('Password reset successfully! You can now log in with your new password.');
       setMode('login');
       setPassword(newPassword);
       setResetStep(1);
       setGeneratedCodeDisplay(null);
-    } catch {
-      setErrorMessage('Network or server error. Could not reset password.');
-      setErrorCode('SERVICE_UNAVAILABLE');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Could not reset password.');
+      setErrorCode(err.code || 'SERVICE_UNAVAILABLE');
     } finally {
       setIsLoading(false);
     }

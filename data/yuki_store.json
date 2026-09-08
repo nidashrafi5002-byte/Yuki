@@ -14,7 +14,7 @@
       "medicalNotes": "Blood Group: B+ve. Asthma inhaler in bag.",
       "createdAt": "2026-09-07T12:59:05.447Z",
       "isVerified": true,
-      "failedLoginAttempts": 0,
+      "failedLoginAttempts": 1,
       "resetCode": null,
       "resetToken": null,
       "resetExpires": null,
@@ -263,6 +263,38 @@
       "details": "Successful login for nidashrafi5002@gmail.com",
       "ip": "127.0.0.1",
       "timestamp": "2026-09-07T13:39:32.118Z"
+    },
+    {
+      "id": "aud_e2ea58e4-9959-4fd2-8bef-eada2c8c2ee6",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:34:47.014Z"
+    },
+    {
+      "id": "aud_f328b597-22ac-4a41-a9b0-e44cf1f996e3",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Failed password attempt for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:34:51.257Z"
+    },
+    {
+      "id": "aud_bfd5f413-49ed-4583-8ea6-e6af54c4859d",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:41:14.551Z"
+    },
+    {
+      "id": "aud_013dfbde-8270-4ac9-831d-94aa1dd0acd9",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Invalid password attempt for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:41:18.550Z"
     }
   ],
   "sessionTokens": [
@@ -301,6 +333,18 @@
       "userId": "usr_nirbhaya_demo_01",
       "createdAt": "2026-09-07T13:39:32.116Z",
       "expiresAt": "2026-09-14T13:39:32.116Z"
+    },
+    {
+      "token": "a16703b6e92cfd496845790a4ee5096a9782168de95f08a646710db254ff20a6",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-08T15:34:47.012Z",
+      "expiresAt": "2026-09-15T15:34:47.012Z"
+    },
+    {
+      "token": "baa9cd0d832c569f5f34c1933821e732e92816c1008f7c21ab4ac3f09238efb6",
+      "userId": "usr_nirbhaya_demo_01",
+      "createdAt": "2026-09-08T15:41:14.549Z",
+      "expiresAt": "2026-09-15T15:41:14.549Z"
     }
   ]
 }

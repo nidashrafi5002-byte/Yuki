@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { apiRequest } from '../utils/api';
 import {
   Bot,
   Send,
@@ -60,20 +61,14 @@ export const AISafetyAdvisorView: React.FC<AISafetyAdvisorViewProps> = ({ onTrig
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ai/safety-guidance', {
+      const data = await apiRequest('/api/ai/safety-guidance', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: text,
           history: messages.slice(-4).map(m => ({ sender: m.sender, content: m.content }))
         })
       });
 
-      if (!res.ok) {
-        throw new Error('Safety advisor service connection timeout');
-      }
-
-      const data = await res.json();
       const assistantMessage: AIChatMessage = {
         id: `ai_${Date.now()}`,
         sender: 'assistant',

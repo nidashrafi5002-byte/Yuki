@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapView } from './MapView';
 import { Shield, PhoneCall, Battery, Clock, MapPin, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { LocationPoint } from '../types';
+import { apiRequest } from '../utils/api';
 
 interface PublicTrackingViewProps {
   token: string;
@@ -16,12 +17,7 @@ export const PublicTrackingView: React.FC<PublicTrackingViewProps> = ({ token, o
 
   const fetchTracking = async () => {
     try {
-      const res = await fetch(`/api/track/${token}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Tracking link expired or invalid.');
-      }
-      const json = await res.json();
+      const json = await apiRequest(`/api/track/${token}`);
       setData(json);
       setError(null);
       setLastRefreshed(new Date());

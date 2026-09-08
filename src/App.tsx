@@ -15,6 +15,7 @@ import { CamouflageCalculator } from './components/CamouflageCalculator';
 import { PublicTrackingView } from './components/PublicTrackingView';
 import { User, TrustedContact, EmergencySession, WalkWithMeTimer, IncidentReport, LocationPoint } from './types';
 import { getLastKnownLocation, saveLastKnownLocation } from './utils/tileCache';
+import { apiRequest, setAuthToken } from './utils/api';
 
 export function App() {
   // Public tracking route check (/track/:token)
@@ -62,15 +63,8 @@ export function App() {
   // Fetch Current User
   const checkAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me', {
-        headers: getAuthHeaders()
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
+      const data = await apiRequest('/api/auth/me');
+      setUser(data.user);
     } catch {
       setUser(null);
     } finally {
@@ -82,38 +76,32 @@ export function App() {
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
     try {
-      const headers = getAuthHeaders();
-
       // 1. Active SOS
-      const sosRes = await fetch('/api/emergency/active', { headers });
-      if (sosRes.ok) {
-        const sosData = await sosRes.json();
-        setActiveSession(sosData.session);
+      try {
+        const sosData = await apiRequest('/api/emergency/active');
+        setActiveSession(sosData.session || null);
         if (sosData.breadcrumbs) {
           setBreadcrumbs(sosData.breadcrumbs);
         }
-      }
+      } catch {}
 
       // 2. Contacts
-      const contactsRes = await fetch('/api/contacts', { headers });
-      if (contactsRes.ok) {
-        const contactsData = await contactsRes.json();
+      try {
+        const contactsData = await apiRequest('/api/contacts');
         setContacts(contactsData.contacts || []);
-      }
+      } catch {}
 
       // 3. Walk With Me
-      const walkRes = await fetch('/api/walk-with-me/status', { headers });
-      if (walkRes.ok) {
-        const walkData = await walkRes.json();
+      try {
+        const walkData = await apiRequest('/api/walk-with-me/status');
         setWalkTimer(walkData.timer || null);
-      }
+      } catch {}
 
       // 4. Incidents
-      const incRes = await fetch('/api/incidents', { headers });
-      if (incRes.ok) {
-        const incData = await incRes.json();
+      try {
+        const incData = await apiRequest('/api/incidents');
         setIncidents(incData.incidents || []);
-      }
+      } catch {}
     } catch (e) {
       console.error('Error fetching dashboard data:', e);
     }
@@ -157,9 +145,8 @@ export function App() {
 
           // If SOS active, post real-time breadcrumbs to backend
           if (activeSession && activeSession.status === 'ACTIVE') {
-            fetch('/api/emergency/location', {
+            apiRequest('/api/emergency/location', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 latitude: lat,
                 longitude: lng,
@@ -201,51 +188,32 @@ export function App() {
 
   // Auth Handlers
   const handleLogin = async (credentials: any) => {
-    const res = await fetch('/api/auth/login', {
+    const data = await apiRequest('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      const customError: any = new Error(err.error || 'Login failed');
-      customError.code = err.code;
-      throw customError;
-    }
-    const data = await res.json();
     if (data.token) {
-      localStorage.setItem('yuki_auth_token', data.token);
+      setAuthToken(data.token);
     }
     setUser(data.user);
   };
 
   const handleRegister = async (regData: any) => {
-    const res = await fetch('/api/auth/register', {
+    const data = await apiRequest('/api/auth/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(regData)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      const customError: any = new Error(err.error || 'Registration failed');
-      customError.code = err.code;
-      throw customError;
-    }
-    const data = await res.json();
     if (data.token) {
-      localStorage.setItem('yuki_auth_token', data.token);
+      setAuthToken(data.token);
     }
     setUser(data.user);
   };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: getAuthHeaders()
-      });
+      await apiRequest('/api/auth/logout', { method: 'POST' });
     } catch {}
-    localStorage.removeItem('yuki_auth_token');
+    setAuthToken(null);
     setUser(null);
     setActiveSession(null);
   };
@@ -259,9 +227,8 @@ export function App() {
   const handleExecuteTrigger = async (triggerType: 'ONE_TAP_SOS' | 'SILENT_ALARM') => {
     setIsSOSCountdownOpen(false);
     try {
-      const res = await fetch('/api/emergency/sos', {
+      const data = await apiRequest('/api/emergency/sos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           triggerType,
           latitude: currentLocation?.latitude || 28.6139,
@@ -270,17 +237,14 @@ export function App() {
           address: currentAddress || 'Live GPS Location'
         })
       });
-      if (res.ok) {
-        const data = await res.json();
-        setActiveSession(data.session);
-        if (data.session.lastLatitude && data.session.lastLongitude) {
-          setBreadcrumbs([{
-            latitude: data.session.lastLatitude,
-            longitude: data.session.lastLongitude,
-            accuracy: data.session.lastAccuracy || 15,
-            timestamp: new Date().toISOString()
-          }]);
-        }
+      setActiveSession(data.session);
+      if (data.session.lastLatitude && data.session.lastLongitude) {
+        setBreadcrumbs([{
+          latitude: data.session.lastLatitude,
+          longitude: data.session.lastLongitude,
+          accuracy: data.session.lastAccuracy || 15,
+          timestamp: new Date().toISOString()
+        }]);
       }
     } catch (err) {
       console.error('SOS dispatch error:', err);
@@ -289,47 +253,31 @@ export function App() {
 
   // Disarm / Stand down
   const handleDisarmConfirm = async (pin: string) => {
-    const res = await fetch('/api/emergency/resolve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ pin, note: 'User entered deactivation PIN' })
-    });
+    try {
+      const data = await apiRequest('/api/emergency/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ pin, note: 'User entered deactivation PIN' })
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error };
-    }
+      if (data.covertDuress) {
+        // Covert duress: hide alarm banner from screen so abuser believes it is turned off
+        setActiveSession(null);
+        return { success: true, covertDuress: true };
+      }
 
-    if (data.covertDuress) {
-      // Covert duress: hide alarm banner from screen so abuser believes it is turned off
       setActiveSession(null);
-      return { success: true, covertDuress: true };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Invalid PIN or server error' };
     }
-
-    setActiveSession(null);
-    return { success: true };
   };
 
   // Contacts handlers
   const handleAddContact = async (contactData: any) => {
-    const res = await fetch('/api/contacts', {
+    const data = await apiRequest('/api/contacts', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
       body: JSON.stringify(contactData)
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) {
-        if (data.code === 'SESSION_EXPIRED') {
-          throw new Error('Your session has expired. Please log in again to continue.');
-        }
-        throw new Error('Please log in to continue.');
-      }
-      throw new Error(data.error || 'Failed to add contact');
-    }
     if (data.contacts) {
       setContacts(data.contacts);
     } else if (data.contact) {
@@ -341,24 +289,10 @@ export function App() {
   };
 
   const handleEditContact = async (id: string, contactData: any) => {
-    const res = await fetch(`/api/contacts/${id}`, {
+    const data = await apiRequest(`/api/contacts/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
       body: JSON.stringify(contactData)
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) {
-        if (data.code === 'SESSION_EXPIRED') {
-          throw new Error('Your session has expired. Please log in again to continue.');
-        }
-        throw new Error('Please log in to continue.');
-      }
-      throw new Error(data.error || 'Failed to update contact');
-    }
     if (data.contacts) {
       setContacts(data.contacts);
     } else if (data.contact) {
@@ -367,20 +301,9 @@ export function App() {
   };
 
   const handleDeleteContact = async (id: string) => {
-    const res = await fetch(`/api/contacts/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
+    const data = await apiRequest(`/api/contacts/${id}`, {
+      method: 'DELETE'
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) {
-        if (data.code === 'SESSION_EXPIRED') {
-          throw new Error('Your session has expired. Please log in again to continue.');
-        }
-        throw new Error('Please log in to continue.');
-      }
-      throw new Error(data.error || 'Failed to delete contact');
-    }
     if (data.contacts) {
       setContacts(data.contacts);
     } else {
@@ -389,20 +312,9 @@ export function App() {
   };
 
   const handleSetPrimaryContact = async (id: string) => {
-    const res = await fetch(`/api/contacts/${id}/primary`, {
-      method: 'POST',
-      headers: getAuthHeaders()
+    const data = await apiRequest(`/api/contacts/${id}/primary`, {
+      method: 'POST'
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) {
-        if (data.code === 'SESSION_EXPIRED') {
-          throw new Error('Your session has expired. Please log in again to continue.');
-        }
-        throw new Error('Please log in to continue.');
-      }
-      throw new Error(data.error || 'Failed to set primary contact');
-    }
     if (data.contacts) {
       setContacts(data.contacts);
     } else {
@@ -412,33 +324,34 @@ export function App() {
 
   // Walk With Me Handlers
   const handleStartWalkTimer = async (timerData: any) => {
-    const res = await fetch('/api/walk-with-me/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify(timerData)
-    });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await apiRequest('/api/walk-with-me/start', {
+        method: 'POST',
+        body: JSON.stringify(timerData)
+      });
       setWalkTimer(data.timer);
+    } catch (err) {
+      console.error('Walk timer start error:', err);
     }
   };
 
   const handleCheckInWalkTimer = async (pin: string) => {
-    const res = await fetch('/api/walk-with-me/check-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ pin })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, error: data.error };
+    try {
+      await apiRequest('/api/walk-with-me/check-in', {
+        method: 'POST',
+        body: JSON.stringify({ pin })
+      });
+      setWalkTimer(null);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to check in' };
     }
-    setWalkTimer(null);
-    return { success: true };
   };
 
   const handleCancelWalkTimer = async () => {
-    await fetch('/api/walk-with-me/cancel', { method: 'POST', headers: getAuthHeaders() });
+    try {
+      await apiRequest('/api/walk-with-me/cancel', { method: 'POST' });
+    } catch {}
     setWalkTimer(null);
   };
 
@@ -448,38 +361,24 @@ export function App() {
 
   // Incidents handlers
   const handleCreateIncident = async (incidentData: any) => {
-    const res = await fetch('/api/incidents', {
+    const data = await apiRequest('/api/incidents', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(incidentData)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to save incident');
-    }
-    const data = await res.json();
-    setIncidents(data.incidents);
+    setIncidents(data.incidents || []);
   };
 
   const handleDeleteIncident = async (id: string) => {
-    const res = await fetch(`/api/incidents/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (res.ok) {
-      const data = await res.json();
-      setIncidents(data.incidents);
-    }
+    const data = await apiRequest(`/api/incidents/${id}`, { method: 'DELETE' });
+    setIncidents(data.incidents || []);
   };
 
   // Settings handlers
   const handleUpdatePins = async (pinData: any) => {
-    const res = await fetch('/api/auth/pins', {
+    await apiRequest('/api/auth/pins', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(pinData)
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to update PINs');
-    }
   };
 
   // 1. If public tracking token URL
