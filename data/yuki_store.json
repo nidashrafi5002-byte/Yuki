@@ -5,8 +5,8 @@
       "name": "Nida Ashrafi",
       "email": "nidashrafi5002@gmail.com",
       "phone": "+919876543210",
-      "passwordHash": "bac661581d26a002a69cbc5f9696c46f0da9172330547a3920e471ed45ffa50269f883762ec23600ff03a9d5c4d2fcbf9a3c3ed06710ceb918685a0263a0c84a",
-      "salt": "7e332a1c6052c3b66421b65bce25611b",
+      "passwordHash": "aadee5332861ae6d67b91bcb5ae80ef80057164c385059f674fdca8670793a4238316492b91cc48656929d683a4be85e3b50b65290ce7c9fa9adb1864633dfbb",
+      "salt": "4bee996d87c673e5d1c375d022e8a2e8",
       "safetyPinHash": "cf6f500b7ac2374fbe0e494f3bd13240dfe8dc92d906ef5b9f4752bf6cc541f1a52dfa6e1a63949ae09c3dac77a5d7e10c610c8df4896fa825f025d74ab61128",
       "safetyPinSalt": "09287568b0fbf4032a9b5c28458dfea1",
       "duressPinHash": "c0ba806578d09f36278fb0ae66a672cf22d29be6b69e4be8d6d6223e799f789d5fca68869dcd815755f46505571411aa800e8d2cf91e49aeb249695a16b42bfc",
@@ -14,7 +14,7 @@
       "medicalNotes": "Blood Group: B+ve. Asthma inhaler in bag.",
       "createdAt": "2026-09-07T12:59:05.447Z",
       "isVerified": true,
-      "failedLoginAttempts": 1,
+      "failedLoginAttempts": 0,
       "resetCode": null,
       "resetToken": null,
       "resetExpires": null,
@@ -91,12 +91,27 @@
       "canReceiveSMS": true,
       "canReceiveWhatsApp": true,
       "canReceiveEmail": true,
-      "isPrimary": true,
+      "isPrimary": false,
       "id": "tc_555a2067-6199-4f8a-94de-13b80eb40d2b",
       "userId": "usr_nirbhaya_demo_01",
       "isVerified": true,
       "verificationCode": "3112",
       "createdAt": "2026-09-07T13:38:00.782Z"
+    },
+    {
+      "name": "Mother (Emergency Contact)",
+      "relationship": "Mother",
+      "phone": "+919876520202",
+      "email": "mother.safety@example.com",
+      "canReceiveSMS": true,
+      "canReceiveWhatsApp": true,
+      "canReceiveEmail": true,
+      "isPrimary": true,
+      "id": "tc_ec4e5d88-539f-4d19-97cf-e6633522644f",
+      "userId": "usr_nirbhaya_demo_01",
+      "isVerified": true,
+      "verificationCode": "1334",
+      "createdAt": "2026-09-08T16:13:46.652Z"
     }
   ],
   "emergencySessions": [],
@@ -295,6 +310,62 @@
       "details": "Invalid password attempt for nidashrafi5002@gmail.com",
       "ip": "127.0.0.1",
       "timestamp": "2026-09-08T15:41:18.550Z"
+    },
+    {
+      "id": "aud_6eabae79-e14b-4692-9254-0c4c136583c2",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "LOGIN_FAILED",
+      "details": "Invalid password attempt for nidashrafi5002@gmail.com",
+      "ip": "169.254.169.126",
+      "timestamp": "2026-09-08T15:43:24.829Z"
+    },
+    {
+      "id": "aud_16b76ef2-aa3e-4683-8d18-219bdf0d3a9c",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_REQUESTED",
+      "details": "Reset code generated for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:43:32.271Z"
+    },
+    {
+      "id": "aud_8b60d0b8-ba21-4b4b-8b0e-ab8fc568f554",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "PASSWORD_RESET_COMPLETED",
+      "details": "Password successfully reset for nidashrafi5002@gmail.com",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T15:44:07.762Z"
+    },
+    {
+      "id": "aud_c3d4c4ca-7cae-4d7f-a56c-bc5bbd502cc2",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "169.254.169.126",
+      "timestamp": "2026-09-08T15:44:11.961Z"
+    },
+    {
+      "id": "aud_15f662ab-1486-45b2-a212-eaf553b367e9",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "::ffff:127.0.0.1",
+      "timestamp": "2026-09-08T16:13:46.637Z"
+    },
+    {
+      "id": "aud_023333f8-7a77-421b-af85-ff6994d5c31a",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "TRUSTED_CONTACT_ADDED",
+      "details": "Added trusted contact: Mother (Emergency Contact)",
+      "ip": "127.0.0.1",
+      "timestamp": "2026-09-08T16:13:46.652Z"
+    },
+    {
+      "id": "aud_72e0dc1c-a29d-433c-a56b-3848d780290d",
+      "userId": "usr_nirbhaya_demo_01",
+      "action": "USER_LOGIN",
+      "details": "Successful login for nidashrafi5002@gmail.com",
+      "ip": "::ffff:127.0.0.1",
+      "timestamp": "2026-09-08T16:13:46.768Z"
     }
   ],
   "sessionTokens": [
@@ -311,40 +382,16 @@
       "expiresAt": "2026-09-14T13:19:02.718Z"
     },
     {
-      "token": "e42644528ecb625756873e3b46908b69f84aa5e0a2c60532abd7c7c82dcd2524",
+      "token": "d867905eb3f7c6a65085438dea36815133de9f545e9fc3be875d1943791b764e",
       "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-07T13:26:41.430Z",
-      "expiresAt": "2026-09-14T13:26:41.430Z"
+      "createdAt": "2026-09-08T15:44:11.960Z",
+      "expiresAt": "2026-09-15T15:44:11.960Z"
     },
     {
-      "token": "d0538d9558d5a0ca187d92a6f4d93a4f05867d1288ae84c900369614555e1248",
+      "token": "3fbdd05fac95de22cf9b31ec1021fb5c41d2875319af677b874ba9085eefe183",
       "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-07T13:38:00.769Z",
-      "expiresAt": "2026-09-14T13:38:00.769Z"
-    },
-    {
-      "token": "4dc73d974b8bad79ada2aaccbbf5e595bc67cfdd7502ce848d5c2f649ef1368e",
-      "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-07T13:38:05.489Z",
-      "expiresAt": "2026-09-14T13:38:05.489Z"
-    },
-    {
-      "token": "62c40f3e1780e2112562aebbaf532de0d9d6181f171a93d4f9ca6d555c14dcd7",
-      "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-07T13:39:32.116Z",
-      "expiresAt": "2026-09-14T13:39:32.116Z"
-    },
-    {
-      "token": "a16703b6e92cfd496845790a4ee5096a9782168de95f08a646710db254ff20a6",
-      "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-08T15:34:47.012Z",
-      "expiresAt": "2026-09-15T15:34:47.012Z"
-    },
-    {
-      "token": "baa9cd0d832c569f5f34c1933821e732e92816c1008f7c21ab4ac3f09238efb6",
-      "userId": "usr_nirbhaya_demo_01",
-      "createdAt": "2026-09-08T15:41:14.549Z",
-      "expiresAt": "2026-09-15T15:41:14.549Z"
+      "createdAt": "2026-09-08T16:13:46.767Z",
+      "expiresAt": "2026-09-15T16:13:46.767Z"
     }
   ]
 }

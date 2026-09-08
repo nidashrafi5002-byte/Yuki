@@ -15,7 +15,7 @@ import { CamouflageCalculator } from './components/CamouflageCalculator';
 import { PublicTrackingView } from './components/PublicTrackingView';
 import { User, TrustedContact, EmergencySession, WalkWithMeTimer, IncidentReport, LocationPoint } from './types';
 import { getLastKnownLocation, saveLastKnownLocation } from './utils/tileCache';
-import { apiRequest, setAuthToken } from './utils/api';
+import { apiRequest, setAuthToken, getAuthToken } from './utils/api';
 
 export function App() {
   // Public tracking route check (/track/:token)
@@ -54,9 +54,9 @@ export function App() {
   });
   const geoWatchIdRef = useRef<number | null>(null);
 
-  // Secure Auth Token Helper (supports cookies + iframe Bearer tokens)
+  // Secure Auth Token Helper (supports cookies + iframe Bearer tokens + multi-tier fallback)
   const getAuthHeaders = (): Record<string, string> => {
-    const token = localStorage.getItem('yuki_auth_token');
+    const token = getAuthToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -110,6 +110,18 @@ export function App() {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Seamless re-sync when Android reconnects or switches between Wi-Fi and Mobile Data
+  useEffect(() => {
+    const handleOnline = () => {
+      checkAuth();
+      if (user) {
+        loadDashboardData();
+      }
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [checkAuth, user, loadDashboardData]);
 
   useEffect(() => {
     if (user) {

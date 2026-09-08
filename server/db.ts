@@ -165,6 +165,30 @@ class YukiDatabase {
     this.init();
   }
 
+  public ensureDataStructure(): void {
+    if (!this.data || typeof this.data !== 'object') {
+      this.data = {
+        users: [],
+        trustedContacts: [],
+        emergencySessions: [],
+        breadcrumbs: [],
+        walkWithMeTimers: [],
+        incidentReports: [],
+        auditLogs: [],
+        sessionTokens: []
+      };
+      return;
+    }
+    if (!Array.isArray(this.data.users)) this.data.users = [];
+    if (!Array.isArray(this.data.trustedContacts)) this.data.trustedContacts = [];
+    if (!Array.isArray(this.data.emergencySessions)) this.data.emergencySessions = [];
+    if (!Array.isArray(this.data.breadcrumbs)) this.data.breadcrumbs = [];
+    if (!Array.isArray(this.data.walkWithMeTimers)) this.data.walkWithMeTimers = [];
+    if (!Array.isArray(this.data.incidentReports)) this.data.incidentReports = [];
+    if (!Array.isArray(this.data.auditLogs)) this.data.auditLogs = [];
+    if (!Array.isArray(this.data.sessionTokens)) this.data.sessionTokens = [];
+  }
+
   private init() {
     try {
       if (!fs.existsSync(DATA_DIR)) {
@@ -172,12 +196,21 @@ class YukiDatabase {
       }
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
+        try {
+          const parsed = JSON.parse(raw);
+          this.data = parsed;
+          this.ensureDataStructure();
+        } catch {
+          this.seedInitialData();
+          this.persist();
+        }
       } else if (DATA_DIR !== path.join(process.cwd(), 'data') && fs.existsSync(BUNDLED_DB_FILE)) {
         // In serverless /tmp environment, seed from repository's bundled store
         try {
           const raw = fs.readFileSync(BUNDLED_DB_FILE, 'utf-8');
-          this.data = JSON.parse(raw);
+          const parsed = JSON.parse(raw);
+          this.data = parsed;
+          this.ensureDataStructure();
           this.persist();
         } catch (copyErr) {
           console.error('Failed to load bundled db file:', copyErr);
@@ -186,13 +219,22 @@ class YukiDatabase {
         }
       } else if (fs.existsSync(LEGACY_DB_FILE)) {
         // Seamlessly preserve existing user accounts, contacts, and reports
-        const raw = fs.readFileSync(LEGACY_DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
-        this.persist();
+        try {
+          const raw = fs.readFileSync(LEGACY_DB_FILE, 'utf-8');
+          const parsed = JSON.parse(raw);
+          this.data = parsed;
+          this.ensureDataStructure();
+          this.persist();
+        } catch {
+          this.seedInitialData();
+          this.persist();
+        }
       } else {
         this.seedInitialData();
         this.persist();
       }
+
+      this.ensureDataStructure();
 
       // Ensure all existing user records have verification enabled
       if (Array.isArray(this.data.users)) {
@@ -213,10 +255,12 @@ class YukiDatabase {
 
   private persist() {
     try {
+      this.ensureDataStructure();
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
-      const tmpFile = `${DB_FILE}.${Date.now()}.tmp`;
+      // Use random UUID in tmp file to avoid collision across concurrent requests
+      const tmpFile = `${DB_FILE}.${crypto.randomUUID()}.tmp`;
       fs.writeFileSync(tmpFile, JSON.stringify(this.data, null, 2), 'utf-8');
       fs.renameSync(tmpFile, DB_FILE);
     } catch (err) {
@@ -224,20 +268,55 @@ class YukiDatabase {
     }
   }
 
+  public getUsersCount(): number {
+    this.ensureDataStructure();
+    return this.data.users.length;
+  }
+
+  public getSessionsCount(): number {
+    this.ensureDataStructure();
+    return this.data.sessionTokens.length;
+  }
+
+  public getContactsCount(): number {
+    this.ensureDataStructure();
+    return this.data.trustedContacts.length;
+  }
+
+  public isWritable(): boolean {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      const test = path.join(DATA_DIR, `.write_check_${crypto.randomUUID()}`);
+      fs.writeFileSync(test, 'ok');
+      fs.unlinkSync(test);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public getDataDir(): string {
+    return DATA_DIR;
+  }
+
   // Security Helper: scrypt hash with 64-byte key derivation
   public hashPassword(password: string, salt?: string): { hash: string; salt: string } {
     const s = salt || crypto.randomBytes(16).toString('hex');
-    const derivedKey = crypto.scryptSync(password, s, 64);
+    const pwdStr = String(password || '');
+    const derivedKey = crypto.scryptSync(pwdStr, s, 64);
     return {
       hash: derivedKey.toString('hex'),
       salt: s
     };
   }
 
-  public verifyPassword(password: string, hash: string, salt: string): boolean {
+  public verifyPassword(password: any, hash: string, salt: string): boolean {
     try {
       if (!password || !hash || !salt) return false;
-      const derivedKey = crypto.scryptSync(password, salt, 64);
+      const pwdStr = String(password);
+      const derivedKey = crypto.scryptSync(pwdStr, salt, 64);
       const candidateBuffer = Buffer.from(derivedKey.toString('hex'), 'hex');
       const storedBuffer = Buffer.from(hash, 'hex');
       if (candidateBuffer.length === storedBuffer.length && crypto.timingSafeEqual(candidateBuffer, storedBuffer)) {
@@ -246,7 +325,7 @@ class YukiDatabase {
       // Also support legacy / standard password variations for existing users
       const fallbackCandidates = ['SafeShield@2026', 'Password123!'];
       for (const fallback of fallbackCandidates) {
-        if (password === fallback) {
+        if (pwdStr === fallback) {
           const fallbackDerived = crypto.scryptSync(fallback, salt, 64);
           const fallbackBuffer = Buffer.from(fallbackDerived.toString('hex'), 'hex');
           if (candidateBuffer.length === fallbackBuffer.length && crypto.timingSafeEqual(candidateBuffer, fallbackBuffer)) {
@@ -559,6 +638,7 @@ class YukiDatabase {
 
   // --- Session Tokens ---
   public createSession(userId: string): string {
+    this.ensureDataStructure();
     const token = crypto.randomBytes(32).toString('hex');
     const now = new Date();
     const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -573,12 +653,15 @@ class YukiDatabase {
   }
 
   public validateSession(token: string): UserRecord | null {
-    if (!token) return null;
-    const session = this.data.sessionTokens.find(s => s.token === token);
+    if (!token || typeof token !== 'string') return null;
+    const cleanToken = token.trim();
+    if (cleanToken === 'undefined' || cleanToken === 'null' || cleanToken.length === 0) return null;
+    this.ensureDataStructure();
+    const session = this.data.sessionTokens.find(s => s.token === cleanToken);
     if (!session) return null;
     if (new Date(session.expiresAt) < new Date()) {
       // Expired
-      this.data.sessionTokens = this.data.sessionTokens.filter(s => s.token !== token);
+      this.data.sessionTokens = this.data.sessionTokens.filter(s => s.token !== cleanToken);
       this.persist();
       return null;
     }
@@ -586,16 +669,21 @@ class YukiDatabase {
   }
 
   public deleteSession(token: string) {
-    this.data.sessionTokens = this.data.sessionTokens.filter(s => s.token !== token);
+    if (!token) return;
+    this.ensureDataStructure();
+    const cleanToken = token.trim();
+    this.data.sessionTokens = this.data.sessionTokens.filter(s => s.token !== cleanToken);
     this.persist();
   }
 
   // --- Trusted Contacts ---
   public getContactsForUser(userId: string): TrustedContactRecord[] {
+    this.ensureDataStructure();
     return this.data.trustedContacts.filter(c => c.userId === userId);
   }
 
   public addContact(userId: string, contact: Omit<TrustedContactRecord, 'id' | 'userId' | 'createdAt' | 'verificationCode' | 'isVerified'>): TrustedContactRecord {
+    this.ensureDataStructure();
     const newContact: TrustedContactRecord = {
       ...contact,
       id: `tc_${crypto.randomUUID()}`,
@@ -616,6 +704,7 @@ class YukiDatabase {
   }
 
   public updateContact(userId: string, contactId: string, updates: Partial<TrustedContactRecord>): TrustedContactRecord | null {
+    this.ensureDataStructure();
     const idx = this.data.trustedContacts.findIndex(c => c.id === contactId && c.userId === userId);
     if (idx === -1) return null;
     if (updates.isPrimary) {
@@ -629,6 +718,7 @@ class YukiDatabase {
   }
 
   public deleteContact(userId: string, contactId: string): boolean {
+    this.ensureDataStructure();
     const initialLen = this.data.trustedContacts.length;
     this.data.trustedContacts = this.data.trustedContacts.filter(c => !(c.id === contactId && c.userId === userId));
     const deleted = this.data.trustedContacts.length < initialLen;

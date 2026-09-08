@@ -7,8 +7,8 @@ import { generateSafetyGuidance } from './gemini.ts';
 export function createYukiApp(): express.Express {
   const app = express();
 
-  // Trust proxy for proper HTTPS protocol detection on Vercel, Cloud Run, Render, etc.
-  app.set('trust proxy', 1);
+  // Trust proxy for proper HTTPS protocol detection on Vercel, Cloud Run, Cloudflare, Render, etc.
+  app.set('trust proxy', true);
 
   // Global Middlewares
   app.use(express.json({ limit: '10mb' }));
@@ -16,89 +16,168 @@ export function createYukiApp(): express.Express {
   app.use(cookieParser());
 
   // Bullet-proof CORS configuration supporting cross-origin Vercel / mobile deployments
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow all origins (reflection) or requests without origin (curl, mobile apps, Postman)
-        callback(null, true);
-      },
-      credentials: true,
-      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-      allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-Requested-With',
-        'Accept',
-        'Origin',
-        'Cache-Control',
-        'Pragma'
-      ]
-    })
-  );
+  const corsMiddleware = cors({
+    origin: (origin, callback) => {
+      // Allow all origins (reflection) or requests without origin (curl, mobile apps, Postman)
+      callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Cache-Control',
+      'Pragma',
+      'X-Auth-Token',
+      'sec-ch-ua',
+      'sec-ch-ua-mobile',
+      'sec-ch-ua-platform',
+      'sec-fetch-dest',
+      'sec-fetch-mode',
+      'sec-fetch-site',
+      'Accept-Language',
+      'X-Client-Platform'
+    ],
+    exposedHeaders: ['Set-Cookie', 'Authorization']
+  });
 
-  // Helper for cookie options compatible with Android Chrome and HTTPS
-  const getCookieOptions = (req: express.Request) => {
-    const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
-    const isSecure = isProduction || req.secure || req.headers['x-forwarded-proto'] === 'https';
-    return {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: (isSecure ? 'none' : 'lax') as 'none' | 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    };
+  app.use(corsMiddleware);
+  app.options('*', corsMiddleware);
+
+  // Helper to reliably detect HTTPS across Cloud Run, Vercel, reverse proxies, and direct connections
+  const getIsHttps = (req: express.Request): boolean => {
+    if (req.secure) return true;
+    const protoHeader = req.headers['x-forwarded-proto'];
+    if (typeof protoHeader === 'string' && protoHeader.toLowerCase().includes('https')) {
+      return true;
+    }
+    if (Array.isArray(protoHeader) && protoHeader.some(p => p.toLowerCase().includes('https'))) {
+      return true;
+    }
+    if (process.env.NODE_ENV === 'production' || !!process.env.VERCEL) {
+      return true;
+    }
+    return false;
   };
 
-  const getClearCookieOptions = (req: express.Request) => {
-    const isProduction = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
-    const isSecure = isProduction || req.secure || req.headers['x-forwarded-proto'] === 'https';
-    return {
+  // Helper for cookie options compatible with Android Chrome and HTTPS
+  const getCookieOptions = (req: express.Request): express.CookieOptions => {
+    const isHttps = getIsHttps(req);
+    // Detect if the request originates from a cross-origin context / iframe
+    const fetchDest = req.headers['sec-fetch-dest'];
+    const fetchSite = req.headers['sec-fetch-site'];
+    const isCrossSite = fetchSite === 'cross-site' || fetchDest === 'iframe';
+
+    const options: express.CookieOptions = {
       httpOnly: true,
-      secure: isSecure,
-      sameSite: (isSecure ? 'none' : 'lax') as 'none' | 'lax',
+      secure: isHttps,
+      // For first-party production top-level browser navigation (e.g. Android Chrome): SameSite=Lax is standard and never blocked
+      // For cross-site / iframe embedded preview: SameSite=None + Secure + Partitioned
+      sameSite: (isCrossSite ? 'none' : 'lax'),
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    };
+
+    if (isCrossSite && isHttps) {
+      (options as any).partitioned = true;
+    }
+
+    return options;
+  };
+
+  const getClearCookieOptions = (req: express.Request): express.CookieOptions => {
+    const isHttps = getIsHttps(req);
+    const fetchDest = req.headers['sec-fetch-dest'];
+    const fetchSite = req.headers['sec-fetch-site'];
+    const isCrossSite = fetchSite === 'cross-site' || fetchDest === 'iframe';
+
+    const options: express.CookieOptions = {
+      httpOnly: true,
+      secure: isHttps,
+      sameSite: (isCrossSite ? 'none' : 'lax'),
       path: '/'
     };
+
+    if (isCrossSite && isHttps) {
+      (options as any).partitioned = true;
+    }
+
+    return options;
   };
 
   // Auth Middleware
   const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    let token: string | undefined;
+    try {
+      let token: string | undefined;
 
-    // Prefer Authorization header (Bearer token)
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      if (authHeader.toLowerCase().startsWith('bearer ')) {
-        token = authHeader.substring(7).trim();
-      } else {
-        token = authHeader.trim();
+      // 1. Check Authorization header (Bearer token)
+      const authHeader = req.headers.authorization;
+      if (authHeader && typeof authHeader === 'string') {
+        const candidate = authHeader.replace(/^[Bb]earer\s+/i, '').trim();
+        if (candidate && candidate !== 'undefined' && candidate !== 'null') {
+          token = candidate;
+        }
       }
-    }
 
-    // Fall back to cookie
-    if (!token && req.cookies?.auth_token) {
-      token = req.cookies.auth_token;
-    }
+      // 2. Check X-Auth-Token header
+      if (!token && typeof req.headers['x-auth-token'] === 'string') {
+        const candidate = req.headers['x-auth-token'].trim();
+        if (candidate && candidate !== 'undefined' && candidate !== 'null') {
+          token = candidate;
+        }
+      }
 
-    if (!token) {
-      return res.status(401).json({
+      // 3. Fall back to cookie
+      const cookieToken = req.cookies?.auth_token;
+      let user = null;
+
+      if (token) {
+        user = db.validateSession(token);
+      }
+
+      // If header token didn't validate or was missing, try the cookie token
+      if (!user && cookieToken && typeof cookieToken === 'string') {
+        const cleanCookieToken = cookieToken.trim();
+        if (cleanCookieToken && cleanCookieToken !== 'undefined' && cleanCookieToken !== 'null') {
+          const cookieUser = db.validateSession(cleanCookieToken);
+          if (cookieUser) {
+            user = cookieUser;
+            token = cleanCookieToken;
+          }
+        }
+      }
+
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          error: 'Please log in to continue.',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Your session has expired. Please log in again to continue.',
+          code: 'SESSION_EXPIRED'
+        });
+      }
+
+      (req as any).user = user;
+      (req as any).token = token;
+      next();
+    } catch (authErr: any) {
+      console.error('requireAuth unexpected exception:', authErr);
+      return res.status(500).json({
         success: false,
-        error: 'Please log in to continue.',
-        code: 'AUTH_REQUIRED'
+        error: 'Authentication subsystem error. Please try again.',
+        code: 'AUTH_SUBSYSTEM_ERROR',
+        details: authErr?.message
       });
     }
-
-    const user = db.validateSession(token);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Your session has expired. Please log in again to continue.',
-        code: 'SESSION_EXPIRED'
-      });
-    }
-
-    (req as any).user = user;
-    (req as any).token = token;
-    next();
   };
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -106,14 +185,49 @@ export function createYukiApp(): express.Express {
   // Define API Router
   const apiRouter = express.Router();
 
-  // 1. Health Check
+  // 1. Health Check (Safe Diagnostics for backend, database, environment, session subsystem)
   apiRouter.get('/health', (req, res) => {
+    const isHttps = getIsHttps(req);
+    const authHeader = req.headers.authorization;
+    const hasBearer = !!authHeader && typeof authHeader === 'string' && authHeader.trim().length > 7;
+    const hasAuthCookie = !!req.cookies?.auth_token;
+
     res.json({
       status: 'operational',
       service: "Yuki Emergency & Women's Safety Platform",
       version: '1.0.0-prod',
-      environment: process.env.VERCEL ? 'vercel-serverless' : (process.env.NODE_ENV || 'development'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      backend: {
+        running: true,
+        uptimeSeconds: Math.floor(process.uptime()),
+        nodeVersion: process.version
+      },
+      database: {
+        connected: true,
+        writable: db.isWritable(),
+        storageType: db.getDataDir().startsWith('/tmp') ? 'ephemeral-tmp' : 'persistent-disk',
+        usersCount: db.getUsersCount(),
+        activeSessionsCount: db.getSessionsCount(),
+        contactsCount: db.getContactsCount()
+      },
+      environment: {
+        platform: process.env.VERCEL ? 'vercel-serverless' : 'node-express',
+        isProduction: process.env.NODE_ENV === 'production' || !!process.env.VERCEL,
+        isHttps
+      },
+      sessionSubsystem: {
+        ready: true,
+        storageReady: true,
+        activeSessions: db.getSessionsCount()
+      },
+      clientDiagnostics: {
+        ip: req.ip || req.socket.remoteAddress || 'unknown',
+        protocol: req.protocol,
+        isHttps,
+        hasAuthCookie,
+        hasAuthHeader: hasBearer,
+        userAgentPlatform: req.headers['sec-ch-ua-platform'] || (req.headers['user-agent']?.includes('Android') ? 'Android' : 'Desktop/Other')
+      }
     });
   });
 
@@ -195,7 +309,7 @@ export function createYukiApp(): express.Express {
 
   apiRouter.post('/auth/login', (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body || {};
       if (!email || !password) {
         return res.status(400).json({
           success: false,
@@ -457,7 +571,8 @@ export function createYukiApp(): express.Express {
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve contacts due to a server error.',
-        code: 'SERVER_ERROR'
+        code: 'SERVER_ERROR',
+        details: err?.message
       });
     }
   });
@@ -465,7 +580,7 @@ export function createYukiApp(): express.Express {
   apiRouter.post('/contacts', requireAuth, (req, res) => {
     try {
       const user = (req as any).user;
-      const { name, relationship, phone, email, canReceiveSMS, canReceiveWhatsApp, canReceiveEmail, isPrimary } = req.body;
+      const { name, relationship, phone, email, canReceiveSMS, canReceiveWhatsApp, canReceiveEmail, isPrimary } = req.body || {};
 
       if (!name || typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({
@@ -535,7 +650,8 @@ export function createYukiApp(): express.Express {
       res.status(500).json({
         success: false,
         error: 'A server or database error occurred while saving your contact. Please try again.',
-        code: 'SERVER_ERROR'
+        code: 'SERVER_ERROR',
+        details: err?.message
       });
     }
   });

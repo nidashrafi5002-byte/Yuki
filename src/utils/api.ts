@@ -1,4 +1,4 @@
-// Yuki Production API Client with Bullet-Proof Response Handling & Error Resilience
+// Yuki Production API Client with Multi-Tier Storage & Mobile Resilience
 
 const metaEnv = (import.meta as any).env || {};
 const RAW_API_URL = (metaEnv.VITE_API_URL || metaEnv.VITE_API_BASE_URL || '').trim();
@@ -18,20 +18,53 @@ export class YukiApiError extends Error {
   }
 }
 
+// Multi-tier in-memory token fallback for mobile environments where localStorage may be restricted or blocked
+let inMemoryToken: string | null = null;
+
 export function getAuthToken(): string | null {
-  try {
-    return localStorage.getItem('yuki_auth_token');
-  } catch {
-    return null;
+  // Check memory first
+  if (inMemoryToken && inMemoryToken !== 'undefined' && inMemoryToken !== 'null' && inMemoryToken.trim().length > 0) {
+    return inMemoryToken.trim();
   }
+
+  // Check localStorage
+  try {
+    const local = localStorage.getItem('yuki_auth_token');
+    if (local && local !== 'undefined' && local !== 'null' && local.trim().length > 0) {
+      inMemoryToken = local.trim();
+      return inMemoryToken;
+    }
+  } catch {}
+
+  // Check sessionStorage
+  try {
+    const session = sessionStorage.getItem('yuki_auth_token');
+    if (session && session !== 'undefined' && session !== 'null' && session.trim().length > 0) {
+      inMemoryToken = session.trim();
+      return inMemoryToken;
+    }
+  } catch {}
+
+  return null;
 }
 
 export function setAuthToken(token: string | null): void {
+  const cleanToken = token && token !== 'undefined' && token !== 'null' ? token.trim() : null;
+  inMemoryToken = cleanToken;
+
   try {
-    if (token) {
-      localStorage.setItem('yuki_auth_token', token);
+    if (cleanToken) {
+      localStorage.setItem('yuki_auth_token', cleanToken);
     } else {
       localStorage.removeItem('yuki_auth_token');
+    }
+  } catch {}
+
+  try {
+    if (cleanToken) {
+      sessionStorage.setItem('yuki_auth_token', cleanToken);
+    } else {
+      sessionStorage.removeItem('yuki_auth_token');
     }
   } catch {}
 }
@@ -49,10 +82,12 @@ export function buildApiUrl(endpoint: string): string {
  * 4. Never lets SyntaxError: Unexpected token... leak to UI
  * 5. Automatically sends Bearer token & credentials (cookies)
  * 6. Supports configurable production backend URL (e.g. Vercel frontend -> separate Node backend)
+ * 7. Resilient against mobile network switches (Wi-Fi <-> Mobile Data)
  */
 export async function apiRequest<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  retryCount: number = 0
 ): Promise<T> {
   const url = buildApiUrl(endpoint);
   const headers = new Headers(options.headers || {});
@@ -62,10 +97,21 @@ export async function apiRequest<T = any>(
     headers.set('Content-Type', 'application/json');
   }
 
-  // Attach stored Bearer token
+  // Attach stored Bearer token & X-Auth-Token header
   const token = getAuthToken();
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
+  if (token) {
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    if (!headers.has('X-Auth-Token')) {
+      headers.set('X-Auth-Token', token);
+    }
+  }
+
+  // Detect platform for server diagnostics
+  if (!headers.has('X-Client-Platform')) {
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    headers.set('X-Client-Platform', isMobile ? 'Mobile' : 'Desktop');
   }
 
   let res: Response;
@@ -76,8 +122,15 @@ export async function apiRequest<T = any>(
       credentials: options.credentials || 'include'
     });
   } catch (networkErr: any) {
+    // Retry once for GET requests during Wi-Fi <-> Mobile Data handovers
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    if (isGet && retryCount < 1) {
+      await new Promise(resolve => setTimeout(resolve, 350));
+      return apiRequest<T>(endpoint, options, retryCount + 1);
+    }
+
     throw new YukiApiError(
-      'Network connection failed. Please verify your mobile data or Wi-Fi connection.',
+      'Network connection interrupted. Please verify your mobile data or Wi-Fi connection.',
       'NETWORK_ERROR',
       0,
       networkErr?.message
@@ -87,25 +140,28 @@ export async function apiRequest<T = any>(
   const contentType = res.headers.get('content-type') || '';
   const isJson = contentType.toLowerCase().includes('application/json');
 
-  // Handle Non-JSON responses gracefully (e.g. Vercel 404 HTML, Cloud proxy 502/504 Bad Gateway)
+  // Handle Non-JSON responses gracefully (e.g. Vercel 404 HTML, Cloud proxy 502/504 Bad Gateway, or raw 500 HTML)
   if (!isJson) {
     const textPreview = await res.text().catch(() => '');
 
-    let friendlyMessage = 'Authentication service is temporarily unavailable. Please try again.';
+    let friendlyMessage = 'Service is temporarily unavailable. Please try again.';
     let errorCode = 'SERVICE_UNAVAILABLE';
 
     if (res.status === 404) {
-      friendlyMessage = 'Yuki authentication service is currently unreachable (404). Please ensure the backend server is online.';
+      friendlyMessage = 'Yuki service endpoint was not found (404). Please ensure the backend is online.';
       errorCode = 'SERVICE_UNAVAILABLE';
     } else if (res.status === 502 || res.status === 503 || res.status === 504) {
       friendlyMessage = 'Yuki server is temporarily down or undergoing maintenance. Please try again in a moment.';
       errorCode = 'GATEWAY_ERROR';
+    } else if (res.status === 500) {
+      friendlyMessage = 'A server error occurred while processing your request. Please try again.';
+      errorCode = 'SERVER_ERROR';
     } else if (res.status >= 400) {
-      friendlyMessage = `Server returned an invalid response (${res.status} ${res.statusText}).`;
+      friendlyMessage = `Server returned an unexpected response (${res.status} ${res.statusText}).`;
       errorCode = 'INVALID_SERVER_RESPONSE';
     }
 
-    throw new YukiApiError(friendlyMessage, errorCode, res.status, textPreview.slice(0, 80));
+    throw new YukiApiError(friendlyMessage, errorCode, res.status, textPreview.slice(0, 100));
   }
 
   // Parse JSON safely
@@ -125,6 +181,12 @@ export async function apiRequest<T = any>(
   if (!res.ok) {
     const errorMessage = json.error || json.message || `Request failed with status ${res.status}`;
     const errorCode = json.code || (res.status === 401 ? 'AUTH_REQUIRED' : res.status === 403 ? 'FORBIDDEN' : 'API_ERROR');
+
+    // If session expired and this wasn't a login attempt, clear token
+    if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+      setAuthToken(null);
+    }
+
     throw new YukiApiError(errorMessage, errorCode, res.status, json);
   }
 
